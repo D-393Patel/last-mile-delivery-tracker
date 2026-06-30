@@ -15,9 +15,11 @@ services:
         generateValue: true
       - key: APP_URL
         sync: false
-      - key: RESEND_API_KEY
+      - key: BREVO_API_KEY
         sync: false
-      - key: EMAIL_FROM
+      - key: BREVO_SENDER_EMAIL
+        sync: false
+      - key: BREVO_SENDER_NAME
         sync: false
       - key: TWILIO_ACCOUNT_SID
         sync: false

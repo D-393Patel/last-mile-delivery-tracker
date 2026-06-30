@@ -16,7 +16,7 @@ A production-minded delivery operations platform with configurable pricing, capa
 - Guarded delivery lifecycle with optimistic concurrency control
 - Immutable tracking history plus admin audit log
 - Failed-attempt reason, customer rescheduling, and automatic reassignment
-- Email/SMS delivery through Resend and Twilio with an outbox retry endpoint
+- Email/SMS delivery through Brevo or Resend and Twilio with an outbox retry endpoint
 - Responsive customer, agent, and operations dashboards
 - Auto-refreshing authenticated tracking timeline
 - Public tracking page with a privacy-safe API
@@ -36,7 +36,7 @@ Next.js 16, React 19, TypeScript, PostgreSQL, Prisma, Zod, JOSE, bcrypt, and Vit
 | Delivery lifecycle | Guarded agent/admin transitions with terminal-state protection |
 | Immutable tracking | Append-only events recording status, timestamp, actor, message, and optional coordinates |
 | Failed delivery | Required reason, numbered attempts, customer reschedule, and reassignment |
-| Customer notifications | Email and SMS outbox with Resend/Twilio delivery and retry endpoint |
+| Customer notifications | Email and SMS outbox with Brevo/Resend, Twilio, and a retry endpoint |
 | Admin operations | Order search plus status, zone, and agent filters |
 | Live customer tracking | Public tracking and auto-refreshing authenticated timeline |
 
@@ -73,7 +73,8 @@ Public demo tracking number: `LMD260630DEMO01`.
 | `AUTH_SECRET` | Yes | At least 32 random characters used to sign sessions |
 | `APP_URL` | Yes | Public application origin |
 | `CRON_SECRET` | Yes | Bearer token for the notification outbox worker |
-| `RESEND_API_KEY`, `EMAIL_FROM` | No | Email worker provider configuration |
+| `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, `BREVO_SENDER_NAME` | No | Domain-free email provider configuration |
+| `RESEND_API_KEY`, `EMAIL_FROM` | No | Optional custom-domain email provider configuration |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | No | SMS worker provider configuration |
 
 Never commit `.env`; `.env.example` contains safe placeholders.
@@ -147,10 +148,10 @@ Tests focus on the evaluation-critical rules: weight/rate boundaries, COD caps, 
 
 1. Fork/import this repository in Render and choose **Blueprint**.
 2. Render reads `render.yaml`, creates PostgreSQL and the Docker web service, and generates `AUTH_SECRET`.
-3. Set `APP_URL` to the generated service URL and provide the Resend/Twilio credentials requested by the Blueprint.
+3. Set `APP_URL` to the generated service URL and provide the Brevo/Twilio credentials requested by the Blueprint. A custom domain is not required: verify your existing email address as a Brevo sender.
 4. The pre-deploy command initializes and seeds the schema.
 
-Schedule a POST to `/api/internal/notifications/process` with `Authorization: Bearer <CRON_SECRET>` to drain the notification outbox. When provider variables are absent, queued messages are safely marked as skipped for local development.
+Schedule a POST to `/api/internal/notifications/process` with `Authorization: Bearer <CRON_SECRET>` to drain the notification outbox. When provider variables are absent, queued messages are safely marked as skipped for local development. If both Brevo and Resend are configured, Brevo is used first.
 
 For Vercel, connect any hosted PostgreSQL database, set the three required environment variables, run `npm run db:push && npm run db:seed` once, and deploy normally.
 

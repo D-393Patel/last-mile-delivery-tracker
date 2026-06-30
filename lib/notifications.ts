@@ -32,15 +32,32 @@ export async function queueStatusNotifications(orderId: string, status: OrderSta
 }
 
 async function deliverEmail(recipient: string, subject: string | null, body: string) {
-  if (!process.env.RESEND_API_KEY) return null;
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: process.env.EMAIL_FROM, to: [recipient], subject: subject || "Delivery update", text: body }),
-  });
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.message || "Email provider rejected the message.");
-  return result.id as string;
+  if (process.env.BREVO_API_KEY && process.env.BREVO_SENDER_EMAIL) {
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: { "api-key": process.env.BREVO_API_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sender: { name: process.env.BREVO_SENDER_NAME || "Dispatch", email: process.env.BREVO_SENDER_EMAIL },
+        to: [{ email: recipient }], subject: subject || "Delivery update", textContent: body,
+      }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || "Brevo rejected the email.");
+    return result.messageId as string;
+  }
+
+  if (process.env.RESEND_API_KEY) {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: process.env.EMAIL_FROM, to: [recipient], subject: subject || "Delivery update", text: body }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || "Resend rejected the email.");
+    return result.id as string;
+  }
+
+  return null;
 }
 
 async function deliverSms(recipient: string, body: string) {
