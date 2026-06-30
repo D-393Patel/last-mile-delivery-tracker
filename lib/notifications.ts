@@ -28,6 +28,7 @@ export async function queueStatusNotifications(orderId: string, status: OrderSta
     });
   }
   await db.notification.createMany({ data: notifications });
+  await processNotificationOutbox();
 }
 
 async function deliverEmail(recipient: string, subject: string | null, body: string) {
@@ -57,7 +58,7 @@ async function deliverSms(recipient: string, body: string) {
 }
 
 export async function processNotificationOutbox(limit = 25) {
-  const queued = await db.notification.findMany({ where: { state: NotificationState.QUEUED }, orderBy: { createdAt: "asc" }, take: limit });
+  const queued = await db.notification.findMany({ where: { state: { in: [NotificationState.QUEUED, NotificationState.FAILED] } }, orderBy: { createdAt: "asc" }, take: limit });
   const results = { sent: 0, skipped: 0, failed: 0 };
   for (const item of queued) {
     try {

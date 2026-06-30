@@ -4,9 +4,9 @@ import { cookies } from "next/headers";
 import { AppError } from "@/lib/errors";
 
 const COOKIE_NAME = "dispatch_session";
-const secret = new TextEncoder().encode(
-  process.env.AUTH_SECRET || "development-only-secret-change-before-production",
-);
+const secretValue = process.env.AUTH_SECRET || (process.env.NODE_ENV === "production" ? "" : "local-development-secret-change-before-deploying");
+if (!secretValue) throw new Error("AUTH_SECRET must be configured in production.");
+const secret = new TextEncoder().encode(secretValue);
 
 export type Session = {
   userId: string;

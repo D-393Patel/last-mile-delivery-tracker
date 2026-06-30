@@ -14,6 +14,14 @@ export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: numb
   return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+export function rankAgentCandidates<T extends { sameZone: boolean; distanceKm: number; activeOrders: number }>(candidates: T[]) {
+  return [...candidates].sort((a, b) =>
+    Number(b.sameZone) - Number(a.sameZone) ||
+    a.distanceKm - b.distanceKm ||
+    a.activeOrders - b.activeOrders,
+  );
+}
+
 export async function findBestAgent(pickup: { zoneId: string; latitude: number; longitude: number }) {
   const agents = await db.agentProfile.findMany({
     where: { available: true, user: { active: true, role: Role.AGENT } },
@@ -32,7 +40,7 @@ export async function findBestAgent(pickup: { zoneId: string; latitude: number; 
     },
   });
 
-  const ranked = agents
+  const ranked = rankAgentCandidates(agents
     .filter((agent) => agent.user._count.assignedOrders < agent.maxActiveOrders)
     .map((agent) => ({
       ...agent,
@@ -42,12 +50,7 @@ export async function findBestAgent(pickup: { zoneId: string; latitude: number; 
           ? Number.POSITIVE_INFINITY
           : haversineKm(pickup.latitude, pickup.longitude, agent.currentLatitude, agent.currentLongitude),
       activeOrders: agent.user._count.assignedOrders,
-    }))
-    .sort((a, b) =>
-      Number(b.sameZone) - Number(a.sameZone) ||
-      a.distanceKm - b.distanceKm ||
-      a.activeOrders - b.activeOrders,
-    );
+    })));
 
   return ranked[0] ?? null;
 }

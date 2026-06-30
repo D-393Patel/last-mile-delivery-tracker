@@ -1,4 +1,4 @@
-import { OrderStatus, Role } from "@prisma/client";
+import { OrderStatus, Prisma, Role } from "@prisma/client";
 import { requireSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { errorResponse } from "@/lib/errors";
@@ -20,13 +20,19 @@ export async function GET(request: Request) {
         ? { assignedAgentId: session.userId }
         : {};
 
+    const filters: Prisma.OrderWhereInput[] = [];
+    if (zoneId) filters.push({ OR: [{ pickupZoneId: zoneId }, { dropZoneId: zoneId }] });
+    if (search) filters.push({ OR: [
+      { trackingNumber: { contains: search, mode: "insensitive" } },
+      { customer: { name: { contains: search, mode: "insensitive" } } },
+    ] });
+
     const orders = await db.order.findMany({
       where: {
         ...scope,
         ...(status && Object.values(OrderStatus).includes(status) ? { status } : {}),
-        ...(zoneId ? { OR: [{ pickupZoneId: zoneId }, { dropZoneId: zoneId }] } : {}),
         ...(agentId && session.role === Role.ADMIN ? { assignedAgentId: agentId } : {}),
-        ...(search ? { OR: [{ trackingNumber: { contains: search, mode: "insensitive" } }, { customer: { name: { contains: search, mode: "insensitive" } } }] } : {}),
+        ...(filters.length ? { AND: filters } : {}),
       },
       include: { customer: { select: { id: true, name: true, email: true } }, assignedAgent: { select: { id: true, name: true } }, pickupZone: true, dropZone: true },
       orderBy: { createdAt: "desc" },

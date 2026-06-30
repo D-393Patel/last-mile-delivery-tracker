@@ -2,6 +2,8 @@
 
 A production-minded delivery operations platform with configurable pricing, capacity-aware agent assignment, role-based workflows, immutable tracking, failed-delivery rescheduling, and a notification outbox.
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/D-393Patel/last-mile-delivery-tracker)
+
 ## Highlights
 
 - Customer, delivery-agent, and admin authentication and authorization
@@ -10,16 +12,33 @@ A production-minded delivery operations platform with configurable pricing, capa
 - Volumetric weight, actual-weight comparison, and configurable COD surcharge
 - Quote shown before confirmation and recalculated securely on the server
 - Agent ranking by zone, live Haversine distance, capacity, and workload
+- Admin order filtering by status, service zone, and delivery agent
 - Guarded delivery lifecycle with optimistic concurrency control
 - Immutable tracking history plus admin audit log
 - Failed-attempt reason, customer rescheduling, and automatic reassignment
-- Email/SMS outbox ready for Resend and Twilio workers
+- Email/SMS delivery through Resend and Twilio with an outbox retry endpoint
 - Responsive customer, agent, and operations dashboards
+- Auto-refreshing authenticated tracking timeline
 - Public tracking page with a privacy-safe API
 
 ## Stack
 
 Next.js 16, React 19, TypeScript, PostgreSQL, Prisma, Zod, JOSE, bcrypt, and Vitest. The application is a modular monolith: one simple deployment, with business rules isolated into testable services.
+
+## Assignment coverage
+
+| Requirement | Implementation |
+|---|---|
+| Customer/admin order creation | Role-scoped booking form and API |
+| Zone and rate administration | Zone, area, B2B/B2C route-rate, and COD configuration screens |
+| Volumetric pricing | Server-side `(L x B x H) / 5000`, higher-weight billing, itemised quote |
+| Intelligent assignment | Zone, Haversine distance, capacity, and workload ranking with manual override |
+| Delivery lifecycle | Guarded agent/admin transitions with terminal-state protection |
+| Immutable tracking | Append-only events recording status, timestamp, actor, message, and optional coordinates |
+| Failed delivery | Required reason, numbered attempts, customer reschedule, and reassignment |
+| Customer notifications | Email and SMS outbox with Resend/Twilio delivery and retry endpoint |
+| Admin operations | Order search plus status, zone, and agent filters |
+| Live customer tracking | Public tracking and auto-refreshing authenticated timeline |
 
 ## Quick start
 
