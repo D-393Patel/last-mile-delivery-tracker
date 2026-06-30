@@ -1,0 +1,15 @@
+import Link from "next/link";
+import { OrderStatus, Role } from "@prisma/client";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { StatusPill } from "@/components/status-pill";
+
+export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string; search?: string }> }) {
+  const session = await getSession(); if (!session) redirect("/login");
+  const params = await searchParams;
+  const status = Object.values(OrderStatus).includes(params.status as OrderStatus) ? params.status as OrderStatus : undefined;
+  const scope = session.role === Role.CUSTOMER ? { customerId: session.userId } : session.role === Role.AGENT ? { assignedAgentId: session.userId } : {};
+  const orders = await db.order.findMany({ where: { ...scope, ...(status ? { status } : {}), ...(params.search ? { trackingNumber: { contains: params.search, mode: "insensitive" as const } } : {}) }, include: { customer: true, assignedAgent: true, pickupZone: true, dropZone: true }, orderBy: { createdAt: "desc" } });
+  return <><div className="page-title"><div><h1>{session.role === Role.ADMIN ? "All orders" : session.role === Role.AGENT ? "Assigned route" : "My orders"}</h1><p>Search, filter, and open the complete delivery timeline.</p></div>{session.role !== Role.AGENT && <Link href="/dashboard/orders/new" className="button">+ New order</Link>}</div><form className="filters"><input name="search" className="input" placeholder="Search tracking number" defaultValue={params.search} /><select className="select" name="status" defaultValue={status || ""}><option value="">All statuses</option>{Object.values(OrderStatus).map((value) => <option key={value}>{value}</option>)}</select><button className="button secondary small">Apply filters</button></form><div className="card">{orders.length ? <div className="table-wrap"><table className="table"><thead><tr><th>Tracking</th>{session.role === Role.ADMIN && <th>Customer</th>}<th>Route</th><th>Agent</th><th>Status</th><th>Total</th></tr></thead><tbody>{orders.map((order) => <tr key={order.id}><td><Link href={`/dashboard/orders/${order.id}`} className="tracking-code">{order.trackingNumber}</Link></td>{session.role === Role.ADMIN && <td>{order.customer.name}</td>}<td>{order.pickupZone.name} → {order.dropZone.name}</td><td>{order.assignedAgent?.name || "Unassigned"}</td><td><StatusPill status={order.status} /></td><td>₹{Number(order.totalCharge).toFixed(2)}</td></tr>)}</tbody></table></div> : <div className="empty">No matching orders found.</div>}</div></>;
+}

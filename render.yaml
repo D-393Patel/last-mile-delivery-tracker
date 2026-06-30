@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: last-mile-delivery-tracker
+    runtime: docker
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: last-mile-postgres
+          property: connectionString
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: CRON_SECRET
+        generateValue: true
+      - key: APP_URL
+        sync: false
+    preDeployCommand: npx prisma migrate deploy && npm run db:seed
+
+databases:
+  - name: last-mile-postgres
+    plan: free
+    databaseName: lastmile

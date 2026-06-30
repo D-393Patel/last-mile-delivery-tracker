@@ -1,0 +1,245 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  AGENT
+  ADMIN
+}
+
+enum OrderType {
+  B2B
+  B2C
+}
+
+enum PaymentType {
+  PREPAID
+  COD
+}
+
+enum OrderStatus {
+  CREATED
+  ASSIGNED
+  PICKED_UP
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED
+  RESCHEDULED
+  CANCELLED
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+}
+
+enum NotificationState {
+  QUEUED
+  SENT
+  FAILED
+  SKIPPED
+}
+
+model User {
+  id              String          @id @default(cuid())
+  name            String
+  email           String          @unique
+  phone           String?
+  passwordHash    String
+  role            Role            @default(CUSTOMER)
+  active          Boolean         @default(true)
+  agentProfile    AgentProfile?
+  customerOrders  Order[]         @relation("CustomerOrders")
+  createdOrders   Order[]         @relation("CreatedOrders")
+  assignedOrders  Order[]         @relation("AssignedAgent")
+  trackingEvents  TrackingEvent[]
+  auditLogs       AuditLog[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model Zone {
+  id              String          @id @default(cuid())
+  name            String          @unique
+  active          Boolean         @default(true)
+  areas           Area[]
+  originRates     RateCard[]       @relation("OriginZone")
+  destinationRates RateCard[]      @relation("DestinationZone")
+  agents          AgentProfile[]
+  pickupOrders    Order[]          @relation("PickupZone")
+  dropOrders      Order[]          @relation("DropZone")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model Area {
+  id         String   @id @default(cuid())
+  name       String
+  postalCode String   @unique
+  latitude   Float
+  longitude  Float
+  zoneId     String
+  zone       Zone     @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([zoneId])
+}
+
+model RateCard {
+  id                String    @id @default(cuid())
+  originZoneId      String
+  destinationZoneId String
+  orderType         OrderType
+  baseWeightKg      Decimal   @db.Decimal(8, 2)
+  baseRate           Decimal   @db.Decimal(10, 2)
+  additionalRateKg  Decimal   @db.Decimal(10, 2)
+  active             Boolean   @default(true)
+  originZone         Zone      @relation("OriginZone", fields: [originZoneId], references: [id])
+  destinationZone    Zone      @relation("DestinationZone", fields: [destinationZoneId], references: [id])
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@unique([originZoneId, destinationZoneId, orderType])
+}
+
+model CodRule {
+  id          String    @id @default(cuid())
+  orderType   OrderType @unique
+  flatFee     Decimal   @db.Decimal(10, 2)
+  percentage  Decimal   @default(0) @db.Decimal(6, 3)
+  minimumFee  Decimal   @default(0) @db.Decimal(10, 2)
+  maximumFee  Decimal?  @db.Decimal(10, 2)
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model AgentProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  zoneId           String?
+  currentLatitude  Float?
+  currentLongitude Float?
+  available        Boolean  @default(true)
+  maxActiveOrders  Int      @default(5)
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  zone             Zone?    @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  updatedAt        DateTime @updatedAt
+
+  @@index([zoneId, available])
+}
+
+model Order {
+  id                 String        @id @default(cuid())
+  trackingNumber     String        @unique
+  customerId         String
+  createdById        String
+  assignedAgentId    String?
+  pickupAddress      String
+  pickupPostalCode   String
+  pickupLatitude     Float
+  pickupLongitude    Float
+  pickupZoneId       String
+  dropAddress        String
+  dropPostalCode     String
+  dropLatitude       Float
+  dropLongitude      Float
+  dropZoneId         String
+  lengthCm           Decimal       @db.Decimal(8, 2)
+  breadthCm          Decimal       @db.Decimal(8, 2)
+  heightCm           Decimal       @db.Decimal(8, 2)
+  actualWeightKg     Decimal       @db.Decimal(8, 2)
+  volumetricWeightKg Decimal       @db.Decimal(8, 2)
+  billableWeightKg   Decimal       @db.Decimal(8, 2)
+  orderType          OrderType
+  paymentType        PaymentType
+  declaredValue      Decimal       @default(0) @db.Decimal(12, 2)
+  baseCharge         Decimal       @db.Decimal(10, 2)
+  codSurcharge       Decimal       @default(0) @db.Decimal(10, 2)
+  totalCharge        Decimal       @db.Decimal(10, 2)
+  status             OrderStatus   @default(CREATED)
+  scheduledDate      DateTime?
+  deliveryNotes      String?
+  version            Int           @default(1)
+  customer           User          @relation("CustomerOrders", fields: [customerId], references: [id])
+  createdBy          User          @relation("CreatedOrders", fields: [createdById], references: [id])
+  assignedAgent      User?         @relation("AssignedAgent", fields: [assignedAgentId], references: [id])
+  pickupZone         Zone          @relation("PickupZone", fields: [pickupZoneId], references: [id])
+  dropZone           Zone          @relation("DropZone", fields: [dropZoneId], references: [id])
+  trackingEvents     TrackingEvent[]
+  deliveryAttempts   DeliveryAttempt[]
+  notifications      Notification[]
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([customerId, createdAt])
+  @@index([assignedAgentId, status])
+  @@index([status, pickupZoneId])
+}
+
+model TrackingEvent {
+  id        String      @id @default(cuid())
+  orderId   String
+  status    OrderStatus
+  message   String
+  actorId   String
+  metadata  Json?
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  actor     User        @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  createdAt DateTime    @default(now())
+
+  @@index([orderId, createdAt])
+}
+
+model DeliveryAttempt {
+  id             String      @id @default(cuid())
+  orderId        String
+  attemptNumber  Int
+  scheduledDate  DateTime?
+  attemptedAt    DateTime?
+  outcome        OrderStatus?
+  failureReason  String?
+  order          Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@unique([orderId, attemptNumber])
+}
+
+model Notification {
+  id           String              @id @default(cuid())
+  orderId      String
+  channel      NotificationChannel
+  recipient    String
+  subject      String?
+  body         String
+  state        NotificationState   @default(QUEUED)
+  providerId   String?
+  errorMessage String?
+  order        Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt    DateTime            @default(now())
+  sentAt       DateTime?
+
+  @@index([orderId, createdAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  action     String
+  entityType String
+  entityId   String
+  before     Json?
+  after      Json?
+  actor      User     @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId, createdAt])
+}
