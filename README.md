@@ -147,7 +147,7 @@ Tests focus on the evaluation-critical rules: weight/rate boundaries, COD caps, 
 
 1. Fork/import this repository in Render and choose **Blueprint**.
 2. Render reads `render.yaml`, creates PostgreSQL and the Docker web service, and generates `AUTH_SECRET`.
-3. Set `APP_URL` to the generated service URL.
+3. Set `APP_URL` to the generated service URL and provide the Resend/Twilio credentials requested by the Blueprint.
 4. The pre-deploy command initializes and seeds the schema.
 
 Schedule a POST to `/api/internal/notifications/process` with `Authorization: Bearer <CRON_SECRET>` to drain the notification outbox. When provider variables are absent, queued messages are safely marked as skipped for local development.
