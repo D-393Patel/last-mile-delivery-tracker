@@ -4,6 +4,8 @@ A production-minded delivery operations platform with configurable pricing, capa
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/D-393Patel/last-mile-delivery-tracker)
 
+**Live application:** [last-mile-delivery-tracker-lm8c.onrender.com](https://last-mile-delivery-tracker-lm8c.onrender.com)
+
 ## Highlights
 
 - Customer, delivery-agent, and admin authentication and authorization
