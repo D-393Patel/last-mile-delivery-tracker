@@ -40,14 +40,17 @@ async function main() {
   await prisma.agentProfile.upsert({ where: { userId: agentTwo.id }, update: { zoneId: zones[2].id }, create: { userId: agentTwo.id, zoneId: zones[2].id, currentLatitude: 23.205, currentLongitude: 72.64, available: true, maxActiveOrders: 4 } });
 
   const existing = await prisma.order.findUnique({ where: { trackingNumber: "LMD260630DEMO01" } });
-  if (!existing) {
+  if (existing) {
+    // Keep the showcase order aligned with its configured inter-zone B2C rate.
+    await prisma.order.update({ where: { id: existing.id }, data: { baseCharge: 163, totalCharge: 163 } });
+  } else {
     await prisma.order.create({
       data: {
         trackingNumber: "LMD260630DEMO01", customerId: customer.id, createdById: customer.id, assignedAgentId: agent.id,
         pickupAddress: "12 Relief Road, Ahmedabad", pickupPostalCode: "380001", pickupLatitude: 23.0225, pickupLongitude: 72.5714, pickupZoneId: zones[0].id,
         dropAddress: "21 Sector 10, Gandhinagar", dropPostalCode: "382010", dropLatitude: 23.2156, dropLongitude: 72.6369, dropZoneId: zones[2].id,
         lengthCm: 30, breadthCm: 20, heightCm: 15, actualWeightKg: 2, volumetricWeightKg: 1.8, billableWeightKg: 2,
-        orderType: OrderType.B2C, paymentType: PaymentType.PREPAID, declaredValue: 1000, baseCharge: 153, codSurcharge: 0, totalCharge: 153,
+        orderType: OrderType.B2C, paymentType: PaymentType.PREPAID, declaredValue: 1000, baseCharge: 163, codSurcharge: 0, totalCharge: 163,
         status: OrderStatus.IN_TRANSIT, deliveryAttempts: { create: { attemptNumber: 1, scheduledDate: new Date(Date.now() + 86400000) } },
         trackingEvents: { create: [
           { actorId: customer.id, status: OrderStatus.CREATED, message: "Order confirmed and pricing locked.", createdAt: new Date(Date.now() - 7200000) },

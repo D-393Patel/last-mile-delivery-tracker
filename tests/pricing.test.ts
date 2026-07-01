@@ -20,11 +20,23 @@ describe("rate calculation engine", () => {
     expect(quote.baseCharge).toBe(136);
   });
 
+  it("does not add an excess charge at the included-weight boundary", () => {
+    const quote = calculatePrice({ lengthCm: 10, breadthCm: 10, heightCm: 10, actualWeightKg: 1, declaredValue: 0, paymentType: PaymentType.PREPAID }, rule);
+    expect(quote.billableWeightKg).toBe(1);
+    expect(quote.baseCharge).toBe(80);
+  });
+
   it("applies percentage COD pricing with configured minimum and maximum", () => {
     const minimum = calculatePrice({ lengthCm: 10, breadthCm: 10, heightCm: 10, actualWeightKg: 1, declaredValue: 100, paymentType: PaymentType.COD }, rule);
     const maximum = calculatePrice({ lengthCm: 10, breadthCm: 10, heightCm: 10, actualWeightKg: 1, declaredValue: 50000, paymentType: PaymentType.COD }, rule);
     expect(minimum.codSurcharge).toBe(25);
     expect(maximum.codSurcharge).toBe(150);
+  });
+
+  it("combines the configured flat and percentage COD components", () => {
+    const quote = calculatePrice({ lengthCm: 10, breadthCm: 10, heightCm: 10, actualWeightKg: 1, declaredValue: 5000, paymentType: PaymentType.COD }, rule);
+    expect(quote.codSurcharge).toBe(70);
+    expect(quote.totalCharge).toBe(150);
   });
 
   it("never applies COD surcharge to prepaid orders", () => {

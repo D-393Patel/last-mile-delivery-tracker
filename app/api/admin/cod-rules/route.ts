@@ -11,7 +11,10 @@ const schema = z.object({
   percentage: z.coerce.number().nonnegative(),
   minimumFee: z.coerce.number().nonnegative(),
   maximumFee: z.coerce.number().positive().nullable().optional(),
-});
+}).refine(
+  (input) => input.maximumFee == null || input.maximumFee >= input.minimumFee,
+  { path: ["maximumFee"], message: "Maximum fee must be greater than or equal to the minimum fee." },
+);
 
 export async function POST(request: Request) {
   try {

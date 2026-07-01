@@ -106,7 +106,7 @@ All bodies and responses are JSON. Authenticated routes use the HTTP-only sessio
 | POST | `/api/orders/:id/reschedule` | Owning customer | Reschedule failed attempt |
 | GET | `/api/track/:trackingNumber` | Public | Privacy-safe tracking |
 | PATCH | `/api/agents/me/location` | Agent | Availability and live coordinates |
-| POST | `/api/internal/notifications/process` | Worker secret | Deliver queued Resend/Twilio messages |
+| POST | `/api/internal/notifications/process` | Worker secret | Deliver queued Brevo/Resend/Twilio messages |
 | GET | `/api/admin/catalog` | Admin | Zones, rates, agents, customers |
 | POST | `/api/admin/rate-cards` | Admin | Upsert route pricing |
 | POST | `/api/admin/cod-rules` | Admin | Upsert order-type COD pricing |

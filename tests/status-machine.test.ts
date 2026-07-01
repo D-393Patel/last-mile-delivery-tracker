@@ -13,6 +13,16 @@ describe("order lifecycle", () => {
     expect(canTransition(OrderStatus.ASSIGNED, OrderStatus.DELIVERED, Role.AGENT)).toBe(false);
   });
 
+  it("allows agents to report a failed delivery", () => {
+    expect(canTransition(OrderStatus.OUT_FOR_DELIVERY, OrderStatus.FAILED, Role.AGENT)).toBe(true);
+  });
+
+  it("keeps cancellation and rescheduling out of the agent status endpoint", () => {
+    expect(canTransition(OrderStatus.ASSIGNED, OrderStatus.CANCELLED, Role.AGENT)).toBe(false);
+    expect(canTransition(OrderStatus.FAILED, OrderStatus.RESCHEDULED, Role.AGENT)).toBe(false);
+    expect(canTransition(OrderStatus.FAILED, OrderStatus.RESCHEDULED, Role.CUSTOMER)).toBe(false);
+  });
+
   it("prevents mutation of terminal states even by an admin", () => {
     expect(canTransition(OrderStatus.DELIVERED, OrderStatus.IN_TRANSIT, Role.ADMIN)).toBe(false);
     expect(canTransition(OrderStatus.CANCELLED, OrderStatus.CREATED, Role.ADMIN)).toBe(false);

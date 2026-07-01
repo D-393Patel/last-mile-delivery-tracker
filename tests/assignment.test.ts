@@ -30,4 +30,9 @@ describe("agent ranking", () => {
     const ranked = rankAgentCandidates([agent("busy", true, 2, 4), agent("free", true, 2, 1)]);
     expect(ranked[0].id).toBe("free");
   });
+
+  it("places agents without current coordinates behind located agents", () => {
+    const ranked = rankAgentCandidates([agent("unknown", true, Number.POSITIVE_INFINITY, 0), agent("located", true, 3, 2)]);
+    expect(ranked[0].id).toBe("located");
+  });
 });
