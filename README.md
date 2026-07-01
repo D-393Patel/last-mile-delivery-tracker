@@ -149,7 +149,7 @@ Tests focus on the evaluation-critical rules: weight/rate boundaries, COD caps, 
 1. Fork/import this repository in Render and choose **Blueprint**.
 2. Render reads `render.yaml`, creates PostgreSQL and the Docker web service, and generates `AUTH_SECRET`.
 3. Set `APP_URL` to the generated service URL and provide the Brevo/Twilio credentials requested by the Blueprint. A custom domain is not required: verify your existing email address as a Brevo sender.
-4. The pre-deploy command initializes and seeds the schema.
+4. The container initializes and seeds the schema before starting the web server.
 
 Schedule a POST to `/api/internal/notifications/process` with `Authorization: Bearer <CRON_SECRET>` to drain the notification outbox. When provider variables are absent, queued messages are safely marked as skipped for local development. If both Brevo and Resend are configured, Brevo is used first.
 
