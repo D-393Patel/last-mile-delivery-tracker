@@ -8,9 +8,10 @@ RUN npm ci
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Prisma generation needs a syntactically valid URL but does not connect during
-# the image build. Render supplies the real DATABASE_URL to the running service.
+# Static analysis needs syntactically valid values but does not connect or issue
+# sessions during the image build. Render supplies the real values at runtime.
 ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
+ENV AUTH_SECRET=render-build-only-secret-not-used-at-runtime
 RUN npm run build
 
 FROM base AS runner
